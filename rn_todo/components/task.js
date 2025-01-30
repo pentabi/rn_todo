@@ -1,13 +1,19 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
-const Task = ({ id, title }) => {
+const Task = ({ id, title, completed }) => {
   return (
-    <View style={styles.item}>
+    <View style={[styles.item, { width: "90%" }]}>
       <View style={styles.itemLeft}>
         <View style={styles.square}></View>
-        <Text style={styles.itemText}>{title}</Text>
-        <Text style={styles.itemText}>{id}</Text>
+        <Text
+          style={[
+            styles.itemText,
+            { textDecorationLine: completed ? "line-through" : "none" },
+          ]}
+        >
+          {title + id}
+        </Text>
       </View>
       <View style={styles.circular}></View>
     </View>
