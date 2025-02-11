@@ -12,7 +12,7 @@ const Task = ({ id, title, completed }) => {
             { textDecorationLine: completed ? "line-through" : "none" },
           ]}
         >
-          {title + id}
+          {title + "\nid:" + id}
         </Text>
       </View>
       <View style={styles.circular}></View>
