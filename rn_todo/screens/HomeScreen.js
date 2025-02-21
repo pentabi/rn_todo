@@ -85,7 +85,10 @@ const HomeScreen = ({ navigation }) => {
       <TouchableOpacity onPress={() => navigation.navigate("Flashcard")}>
         <Text>FlashCard</Text>
       </TouchableOpacity>
-      /* ItemList */
+      <TouchableOpacity onPress={() => navigation.navigate("Record")}>
+        <Text>Record</Text>
+      </TouchableOpacity>
+      {/* /* ItemList */}
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
