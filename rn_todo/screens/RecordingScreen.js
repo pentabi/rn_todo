@@ -1,14 +1,27 @@
-import { View, Text, TouchableOpacity, StyleSheet, Button } from "react-native";
-import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Button,
+  Alert,
+} from "react-native";
+import React, { useEffect, useState } from "react";
 import { Audio } from "expo-av";
+import { getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
+import { storage } from "../firebaseConfig";
 
 const RecordingScreen = () => {
   const [recording, setRecording] = useState(false);
   const [recordings, setRecordings] = useState([]);
 
+  useEffect(() => {
+    listRecordings();
+  });
   const startRecording = async () => {
     try {
       const perm = await Audio.requestPermissionsAsync();
+      console.log(perm);
       if (perm.status === "granted") {
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
@@ -18,27 +31,77 @@ const RecordingScreen = () => {
           Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
         );
         setRecording(recording);
+        console.log("Recording started");
       }
     } catch (err) {
       console.log(err);
     }
-    console.log("Recording started");
   };
+
   const stopRecording = async () => {
-    setRecording(undefined);
+    try {
+      if (!recording) {
+        console.log("No active recording to stop.");
+        return;
+      }
 
-    await recording.stopAndUnloadAsync();
-    let allRecordings = [...recordings];
-    const { sound, status } = await recording.createNewLoadedSoundAsync();
-    allRecordings.push({
-      sound: sound,
-      duration: getDurationFormatted(status.durationMillis),
-      file: recording.getURI(),
-    });
+      console.log("Stopping recording...");
+      await recording.stopAndUnloadAsync();
 
-    setRecordings(allRecordings);
+      const uri = recording.getURI();
+      if (!uri) {
+        console.log("Failed to get recording URI.");
+        return;
+      }
 
-    console.log("Recording stopped");
+      const { sound, status } = await recording.createNewLoadedSoundAsync();
+
+      const newRecording = {
+        sound: sound,
+        duration: getDurationFormatted(status.durationMillis),
+        file: uri,
+      };
+
+      setRecording(null);
+      console.log("Recording stopped");
+
+      console.log("Recording stopped. Uploading...");
+      await uploadAudioToFirebase(uri);
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+    }
+  };
+
+  const uploadAudioToFirebase = async (uri) => {
+    try {
+      const response = await fetch(uri);
+      console.log(uri);
+      const blob = await response.blob();
+
+      const storageRef = ref(storage, `recordings/audio-${Date.now()}.m4a`);
+      await uploadBytes(storageRef, blob);
+
+      const downloadURL = await getDownloadURL(storageRef);
+      Alert.alert("Upload Successful", `Audio URL: ${downloadURL}`);
+
+      return downloadURL;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      Alert.alert("Upload Failed", error.message);
+    }
+  };
+
+  const listRecordings = async () => {
+    try {
+      const listRef = ref(storage, "recordings/");
+      const res = await listAll(listRef);
+      const urls = await Promise.all(
+        res.items.map((itemRef) => getDownloadURL(itemRef))
+      );
+      setRecordings(urls);
+    } catch (error) {
+      console.error("Error listing recordings:", error);
+    }
   };
 
   const getDurationFormatted = (milliseconds) => {
@@ -53,11 +116,17 @@ const RecordingScreen = () => {
     return recordings.map((recordingLine, index) => {
       return (
         <View key={index} style={styles.row}>
-          <Text style={styles.fill}>
-            Recording #{index + 1} | {recordingLine.duration}
-          </Text>
+          <Text style={styles.fill}>Recording #{index + 1}</Text>
           <Button
-            onPress={() => recordingLine.sound.replayAsync()}
+            onPress={async () => {
+              const soundObject = new Audio.Sound();
+              try {
+                await soundObject.loadAsync({ uri: recordingLine });
+                await soundObject.playAsync();
+              } catch (error) {
+                console.error("Error playing sound:", error);
+              }
+            }}
             title="Play"
           ></Button>
         </View>
