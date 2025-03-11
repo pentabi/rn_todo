@@ -18,18 +18,23 @@ const RecordingScreen = () => {
   useEffect(() => {
     listRecordings();
   });
+
   const startRecording = async () => {
     try {
+      // Request audio recording permissions
       const perm = await Audio.requestPermissionsAsync();
-      console.log(perm);
       if (perm.status === "granted") {
+        //allows recording and ensures recording continues even if the device is in silent mode.
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
+
+        //creates new recording instance
         const { recording } = await Audio.Recording.createAsync(
           Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
         );
+
         setRecording(recording);
         console.log("Recording started");
       }
