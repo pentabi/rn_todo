@@ -49,7 +49,7 @@ const EmailVerificationScreen = ({ navigation }) => {
         if (emailVerified) {
           setSuccessMessage("Email Verified");
           await wait(1500);
-          navigation.replace("DrawerEntry");
+          navigation.replace("Home");
         } else {
           setAlertMessage("Verify your email");
         }

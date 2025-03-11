@@ -98,7 +98,7 @@ const SignInScreen = ({ navigation }) => {
         // Check if the user's email is verified
         if (user.emailVerified) {
           try {
-            navigation.navigate("DrawerEntry"); // Navigate to the main app if verified
+            navigation.navigate("Home"); // Navigate to the main app if verified
           } catch (error) {
             console.log(error);
             setisSigningIn(false);

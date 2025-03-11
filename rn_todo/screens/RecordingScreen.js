@@ -12,7 +12,9 @@ import { getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
 import { storage } from "../firebaseConfig";
 
 const RecordingScreen = () => {
+  //checks recording has started or not
   const [recording, setRecording] = useState(false);
+
   const [recordings, setRecordings] = useState([]);
 
   useEffect(() => {
@@ -45,6 +47,7 @@ const RecordingScreen = () => {
 
   const stopRecording = async () => {
     try {
+      //check if recording is happening
       if (!recording) {
         console.log("No active recording to stop.");
         return;
