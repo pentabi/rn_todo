@@ -10,9 +10,10 @@ import React, { useEffect, useState } from "react";
 import { Audio } from "expo-av";
 import { getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
 import { storage } from "../firebaseConfig";
+import { getAuth } from "firebase/auth";
 
 const RecordingScreen = () => {
-  //checks recording has started or not
+  //used to store recording object
   const [recording, setRecording] = useState(false);
 
   const [recordings, setRecordings] = useState([]);
@@ -54,6 +55,7 @@ const RecordingScreen = () => {
       }
 
       console.log("Stopping recording...");
+      //stops recording and unloads it
       await recording.stopAndUnloadAsync();
 
       const uri = recording.getURI();
@@ -61,14 +63,6 @@ const RecordingScreen = () => {
         console.log("Failed to get recording URI.");
         return;
       }
-
-      const { sound, status } = await recording.createNewLoadedSoundAsync();
-
-      const newRecording = {
-        sound: sound,
-        duration: getDurationFormatted(status.durationMillis),
-        file: uri,
-      };
 
       setRecording(null);
       console.log("Recording stopped");
@@ -82,11 +76,23 @@ const RecordingScreen = () => {
 
   const uploadAudioToFirebase = async (uri) => {
     try {
+      //get user data
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const uid = user.uid;
+
       const response = await fetch(uri);
       console.log(uri);
       const blob = await response.blob();
 
-      const storageRef = ref(storage, `recordings/audio-${Date.now()}.m4a`);
+      const storageRef = ref(
+        storage,
+        `users/${uid}/recordings/audio-${Date.now()}.m4a`
+      );
       await uploadBytes(storageRef, blob);
 
       const downloadURL = await getDownloadURL(storageRef);
@@ -101,7 +107,15 @@ const RecordingScreen = () => {
 
   const listRecordings = async () => {
     try {
-      const listRef = ref(storage, "recordings/");
+      //get user data
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      const uid = user.uid;
+
+      const listRef = ref(storage, `users/${uid}/recordings/`);
       const res = await listAll(listRef);
       const urls = await Promise.all(
         res.items.map((itemRef) => getDownloadURL(itemRef))
@@ -110,14 +124,6 @@ const RecordingScreen = () => {
     } catch (error) {
       console.error("Error listing recordings:", error);
     }
-  };
-
-  const getDurationFormatted = (milliseconds) => {
-    const minutes = milliseconds / 1000 / 60;
-    const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
-    return seconds < 10
-      ? `${Math.floor(minutes)}:0${seconds}`
-      : `${Math.floor(minutes)}:${seconds}`;
   };
 
   const getRecordingLines = () => {
@@ -129,8 +135,14 @@ const RecordingScreen = () => {
             onPress={async () => {
               const soundObject = new Audio.Sound();
               try {
+                console.log("playing sound");
                 await soundObject.loadAsync({ uri: recordingLine });
                 await soundObject.playAsync();
+                soundObject.setOnPlaybackStatusUpdate((status) => {
+                  if (status.didJustFinish) {
+                    console.log("Sound has finished playing");
+                  }
+                });
               } catch (error) {
                 console.error("Error playing sound:", error);
               }
@@ -146,7 +158,7 @@ const RecordingScreen = () => {
   };
 
   return (
-    <View>
+    <View className="flex-1 pt-14">
       <TouchableOpacity onPress={recording ? stopRecording : startRecording}>
         <Text>{recording ? "Stop Recording" : "StartRecording"}</Text>
         {getRecordingLines()}

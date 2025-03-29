@@ -141,6 +141,7 @@ const SignInScreen = ({ navigation }) => {
           </Text>
           {/* inputs */}
           <View>
+            <Text className="text-white">xekygogo@thetechnext.net</Text>
             <Text className="mt-5 py-1" style={styles.emailText}>
               Email
             </Text>
