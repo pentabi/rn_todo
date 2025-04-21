@@ -34,6 +34,16 @@
         "projectId": "834dd715-264a-4813-b234-4d1617d475dd"
       }
     },
-    "owner": "tabito"
+    "owner": "tabito",
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ]
   }
 }
